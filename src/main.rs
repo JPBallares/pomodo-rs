@@ -1,6 +1,7 @@
 use iced::time::{self, Duration};
 use iced::widget::{button, column, container, row, text, text_input};
-use iced::{Element, Length::Fill, Result, Size, Subscription, application};
+use iced::window::{gain_focus, get_latest};
+use iced::{Element, Length::Fill, Result, Size, Subscription, Task, application};
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -36,13 +37,15 @@ impl Pomodoro {
         };
     }
 
-    fn update(&mut self, message: Message) {
+    fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            Message::Pause => self.paused = true,
-            Message::Resume => self.paused = false,
+            Message::Pause => (self.paused = true).into(),
+            Message::Resume => (self.paused = false).into(),
             Message::Stop => {
                 self.remaining_time = self.initial_minutes * 60 + self.initial_seconds;
                 self.paused = true;
+
+                Task::none()
             }
             Message::SetMinutes(str) => {
                 self.initial_minutes = match str.parse::<u16>() {
@@ -50,6 +53,8 @@ impl Pomodoro {
                     _ => 0,
                 };
                 self.remaining_time = self.initial_minutes * 60 + self.initial_seconds;
+
+                Task::none()
             }
             Message::SetSeconds(str) => {
                 self.initial_seconds = match str.parse::<u16>() {
@@ -57,8 +62,20 @@ impl Pomodoro {
                     _ => 0,
                 };
                 self.remaining_time = self.initial_minutes * 60 + self.initial_seconds;
+
+                Task::none()
             }
-            Message::Tick => self.remaining_time -= 1,
+            Message::Tick => {
+                self.remaining_time -= 1;
+                if self.remaining_time == 0 {
+                    Task::batch([
+                        self.update(Message::Stop),
+                        get_latest().and_then::<Message>(gain_focus),
+                    ])
+                } else {
+                    Task::none()
+                }
+            }
         }
     }
 
