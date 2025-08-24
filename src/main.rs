@@ -1,9 +1,6 @@
-use iced::{
-    Element,
-    Length::Fill,
-    Result, Size, application,
-    widget::{button, column, container, row, text, text_input},
-};
+use iced::time::{self, Duration};
+use iced::widget::{button, column, container, row, text, text_input};
+use iced::{Element, Length::Fill, Result, Size, Subscription, application};
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -13,6 +10,7 @@ enum Message {
     Pause,
     Resume,
     Stop,
+    Tick,
 }
 
 #[derive(Debug)]
@@ -64,6 +62,7 @@ impl Pomodoro {
             Message::ResetTimer => {
                 self.remaining_time = self.initial_minutes * 60 + self.initial_seconds
             }
+            Message::Tick => self.remaining_time -= 1,
         }
     }
 
@@ -113,10 +112,19 @@ impl Pomodoro {
         .center_y(Fill)
         .into()
     }
+
+    fn subscription(&self) -> Subscription<Message> {
+        if self.paused {
+            Subscription::none()
+        } else {
+            time::every(Duration::from_secs(1)).map(|_| Message::Tick)
+        }
+    }
 }
 
 fn main() -> Result {
     application("Pomodo.rs", Pomodoro::update, Pomodoro::view)
+        .subscription(Pomodoro::subscription)
         .window_size(Size::new(300.0, 200.0))
         .run()
 }
