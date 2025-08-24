@@ -29,18 +29,24 @@ impl Default for Pomodoro {
 
 impl Pomodoro {
     fn new(minutes: u16, seconds: u16) -> Self {
-        return Self {
+        Self {
             initial_minutes: minutes,
             initial_seconds: seconds,
             remaining_time: minutes * 60 + seconds,
             paused: true,
-        };
+        }
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            Message::Pause => (self.paused = true).into(),
-            Message::Resume => (self.paused = false).into(),
+            Message::Pause => {
+                self.paused = true;
+                Task::none()
+            }
+            Message::Resume => {
+                self.paused = false;
+                Task::none()
+            }
             Message::Stop => {
                 self.remaining_time = self.initial_minutes * 60 + self.initial_seconds;
                 self.paused = true;
@@ -48,19 +54,13 @@ impl Pomodoro {
                 Task::none()
             }
             Message::SetMinutes(str) => {
-                self.initial_minutes = match str.parse::<u16>() {
-                    Ok(num) => num,
-                    _ => 0,
-                };
+                self.initial_minutes = str.parse::<u16>().unwrap_or_default();
                 self.remaining_time = self.initial_minutes * 60 + self.initial_seconds;
 
                 Task::none()
             }
             Message::SetSeconds(str) => {
-                self.initial_seconds = match str.parse::<u16>() {
-                    Ok(num) => num,
-                    _ => 0,
-                };
+                self.initial_seconds = str.parse::<u16>().unwrap_or_default();
                 self.remaining_time = self.initial_minutes * 60 + self.initial_seconds;
 
                 Task::none()
@@ -88,27 +88,28 @@ impl Pomodoro {
 
         container(
             column![
-                match self.paused && !running {
-                    true => container(row![
+                if self.paused && !running {
+                    container(row![
                         text_input("00", &format!("{}", &self.initial_minutes))
                             .on_input(Message::SetMinutes),
                         text(":"),
                         text_input("00", &format!("{}", &self.initial_seconds))
                             .on_input(Message::SetSeconds),
                     ])
-                    .center_x(Fill),
-                    false => container(text(format!(
-                        "{:02}: {:02}",
-                        remaining_minutes, remaining_seconds
+                    .center_x(Fill)
+                } else {
+                    container(text(format!(
+                        "{remaining_minutes:02}: {remaining_seconds:02}",
                     )))
-                    .center_x(Fill),
+                    .center_x(Fill)
                 },
                 container(
                     row![
-                        match self.paused {
-                            true => button(if running { "Resume" } else { "Start" })
-                                .on_press(Message::Resume),
-                            false => button("Pause").on_press(Message::Pause),
+                        if self.paused {
+                            button(if running { "Resume" } else { "Start" })
+                                .on_press(Message::Resume)
+                        } else {
+                            button("Pause").on_press(Message::Pause)
                         },
                         button(if self.paused && !running {
                             "Reset"
