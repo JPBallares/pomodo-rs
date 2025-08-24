@@ -6,7 +6,6 @@ use iced::{Element, Length::Fill, Result, Size, Subscription, application};
 enum Message {
     SetMinutes(String),
     SetSeconds(String),
-    ResetTimer,
     Pause,
     Resume,
     Stop,
@@ -59,9 +58,6 @@ impl Pomodoro {
                 };
                 self.remaining_time = self.initial_minutes * 60 + self.initial_seconds;
             }
-            Message::ResetTimer => {
-                self.remaining_time = self.initial_minutes * 60 + self.initial_seconds
-            }
             Message::Tick => self.remaining_time -= 1,
         }
     }
@@ -70,9 +66,12 @@ impl Pomodoro {
         let remaining_minutes = self.remaining_time / 60; //get the minutes
         let remaining_seconds = self.remaining_time % 60; // get the seconds
 
+        let running = !(remaining_seconds == self.initial_seconds
+            && remaining_minutes == self.initial_minutes);
+
         container(
             column![
-                match self.paused {
+                match self.paused && !running {
                     true => container(row![
                         text_input("00", &format!("{}", &self.initial_minutes))
                             .on_input(Message::SetMinutes),
@@ -90,16 +89,16 @@ impl Pomodoro {
                 container(
                     row![
                         match self.paused {
-                            true => container(button("Resume").on_press(Message::Resume)),
-                            false => container(
-                                row![
-                                    button("Pause").on_press(Message::Pause),
-                                    button("Stop").on_press(Message::Stop),
-                                ]
-                                .spacing(10),
-                            ),
+                            true => button(if running { "Resume" } else { "Start" })
+                                .on_press(Message::Resume),
+                            false => button("Pause").on_press(Message::Pause),
                         },
-                        button("Reset").on_press(Message::ResetTimer)
+                        button(if self.paused && !running {
+                            "Reset"
+                        } else {
+                            "Stop"
+                        })
+                        .on_press(Message::Stop),
                     ]
                     .spacing(10)
                 )
