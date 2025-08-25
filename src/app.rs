@@ -72,11 +72,8 @@ impl Pomodoro {
     }
 
     pub fn view(&self) -> Element<Message> {
-        let remaining_minutes = self.remaining_time / 60; //get the minutes
-        let remaining_seconds = self.remaining_time % 60; // get the seconds
-        let running = !(remaining_seconds == self.initial_seconds
-            && remaining_minutes == self.initial_minutes);
         let initial_time = self.initial_minutes * 60 + self.initial_seconds;
+        let running = self.remaining_time != initial_time;
         let mut column_elements = Vec::<Element<Message>>::new();
         column_elements.push(
             container(timer::view(100.0, self.remaining_time, initial_time))
