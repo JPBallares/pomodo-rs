@@ -58,14 +58,14 @@ impl Pomodoro {
                 Task::none()
             }
             Message::Tick => {
-                self.remaining_time -= 1;
-                if self.remaining_time == 0 {
+                if self.remaining_time > 0 {
+                    self.remaining_time -= 1;
+                    Task::none()
+                } else {
                     Task::batch([
                         self.update(Message::Stop),
                         get_latest().and_then::<Message>(gain_focus),
                     ])
-                } else {
-                    Task::none()
                 }
             }
         }
@@ -78,7 +78,7 @@ impl Pomodoro {
             && remaining_minutes == self.initial_minutes);
         let initial_time = self.initial_minutes * 60 + self.initial_seconds;
         let percent = if initial_time != 0 {
-            Into::<f32>::into(self.remaining_time) / (Into::<f32>::into(initial_time))
+            f32::from(self.remaining_time) / f32::from(initial_time)
         } else {
             0.0
         };
@@ -97,7 +97,7 @@ impl Pomodoro {
                     .center_x(Fill)
                 } else {
                     container(text(format!(
-                        "{remaining_minutes:02}: {remaining_seconds:02}",
+                        "{remaining_minutes:02}:{remaining_seconds:02}",
                     )))
                     .center_x(Fill)
                 },

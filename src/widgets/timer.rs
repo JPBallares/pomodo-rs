@@ -8,6 +8,13 @@ use iced::{Element, mouse};
 
 use crate::app::Pomodoro;
 
+pub const GREEN: Color = Color {
+    r: 0.46,
+    g: 0.96,
+    b: 0.45,
+    a: 1.0,
+};
+
 #[derive(Debug)]
 struct Timer {
     radius: f32,
@@ -37,7 +44,7 @@ impl<Message> canvas::Program<Message> for Timer {
         });
         let semi_circle = builder.build();
         let stroke = Stroke {
-            style: canvas::Style::Solid(Color::parse("#77F774").unwrap_or_default()),
+            style: canvas::Style::Solid(GREEN),
             width: LINE_WIDTH,
             line_cap: canvas::LineCap::Round,
             line_join: canvas::LineJoin::Bevel,
@@ -57,5 +64,7 @@ pub fn view<'a, Message: 'a>(
         radius: radius,
         percent: percent,
     })
+    .width(radius * 2.0)
+    .height(radius * 2.0)
     .into()
 }
