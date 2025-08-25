@@ -1,7 +1,7 @@
 use crate::messages::Message;
 use crate::widgets::timer;
 use iced::time::{self, Duration};
-use iced::widget::{button, column, container, row, text, text_input};
+use iced::widget::{Column, button, container, row, text, text_input};
 use iced::window::{gain_focus, get_latest};
 use iced::{Element, Length::Fill, Subscription, Task};
 
@@ -77,50 +77,50 @@ impl Pomodoro {
         let running = !(remaining_seconds == self.initial_seconds
             && remaining_minutes == self.initial_minutes);
         let initial_time = self.initial_minutes * 60 + self.initial_seconds;
-        let percent = if initial_time != 0 {
-            f32::from(self.remaining_time) / f32::from(initial_time)
-        } else {
-            0.0
-        };
-
-        container(
-            column![
-                container(timer::view(self, 80.0, percent)).center_x(Fill),
-                if self.paused && !running {
-                    container(row![
-                        text_input("00", &format!("{}", &self.initial_minutes))
-                            .on_input(Message::SetMinutes),
-                        text(":"),
-                        text_input("00", &format!("{}", &self.initial_seconds))
-                            .on_input(Message::SetSeconds),
-                    ])
-                    .center_x(Fill)
-                } else {
-                    container(text(format!(
-                        "{remaining_minutes:02}:{remaining_seconds:02}",
-                    )))
-                    .center_x(Fill)
-                },
-                container(
-                    row![
-                        if self.paused {
-                            button(if running { "Resume" } else { "Start" })
-                                .on_press(Message::Resume)
-                        } else {
-                            button("Pause").on_press(Message::Pause)
-                        },
-                        button(if self.paused && !running {
-                            "Reset"
-                        } else {
-                            "Stop"
-                        })
-                        .on_press(Message::Stop),
-                    ]
-                    .spacing(10)
-                )
+        let mut column_elements = Vec::<Element<Message>>::new();
+        column_elements.push(
+            container(timer::view(100.0, self.remaining_time, initial_time))
                 .center_x(Fill)
-            ]
-            .spacing(10),
+                .into(),
+        );
+        if self.paused && !running {
+            column_elements.push(
+                container(row![
+                    text_input("00", &format!("{}", &self.initial_minutes))
+                        .on_input(Message::SetMinutes),
+                    text(":"),
+                    text_input("00", &format!("{}", &self.initial_seconds))
+                        .on_input(Message::SetSeconds),
+                ])
+                .center_x(Fill)
+                .into(),
+            );
+        }
+        column_elements.push(
+            container(
+                row![
+                    if self.paused {
+                        button(if running { "Resume" } else { "Start" }).on_press(Message::Resume)
+                    } else {
+                        button("Pause").on_press(Message::Pause)
+                    },
+                    button(if self.paused && !running {
+                        "Reset"
+                    } else {
+                        "Stop"
+                    })
+                    .on_press(Message::Stop),
+                ]
+                .spacing(10),
+            )
+            .center_x(Fill)
+            .into(),
+        );
+        container(
+            Column::from_vec(column_elements)
+                .spacing(10)
+                .height(Fill)
+                .width(Fill),
         )
         .padding(10)
         .center_x(Fill)

@@ -1,12 +1,11 @@
 use std::f32::consts::PI;
 
+use iced::alignment::{Horizontal, Vertical};
 use iced::widget::canvas;
-use iced::widget::canvas::Stroke;
 use iced::widget::canvas::path::{Arc, Builder};
+use iced::widget::canvas::{Stroke, Text};
 use iced::{Color, Radians, Rectangle, Renderer, Theme};
 use iced::{Element, mouse};
-
-use crate::app::Pomodoro;
 
 pub const GREEN: Color = Color {
     r: 0.46,
@@ -15,10 +14,11 @@ pub const GREEN: Color = Color {
     a: 1.0,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct Timer {
     radius: f32,
     percent: f32,
+    time: String,
 }
 
 impl<Message> canvas::Program<Message> for Timer {
@@ -29,7 +29,7 @@ impl<Message> canvas::Program<Message> for Timer {
         &self,
         _state: &(),
         renderer: &Renderer,
-        _theme: &Theme,
+        theme: &Theme,
         bounds: Rectangle,
         _cursor: mouse::Cursor,
     ) -> Vec<canvas::Geometry> {
@@ -51,17 +51,37 @@ impl<Message> canvas::Program<Message> for Timer {
             line_dash: canvas::LineDash::default(),
         };
         frame.stroke(&semi_circle, stroke);
+        let time_display = Text {
+            content: String::clone(&self.time),
+            position: frame.center(),
+            color: theme.palette().text,
+            horizontal_alignment: Horizontal::Center,
+            vertical_alignment: Vertical::Center,
+            ..Default::default()
+        };
+        frame.fill_text(time_display);
         vec![frame.into_geometry()]
     }
 }
 
 pub fn view<'a, Message: 'a>(
-    _state: &'a Pomodoro,
     radius: f32,
-    percent: f32,
+    remaining_time: u16,
+    initial_time: u16,
 ) -> Element<'a, Message> {
-    canvas(Timer { radius, percent })
-        .width(radius * 2.0)
-        .height(radius * 2.0)
-        .into()
+    let remaining_minutes = remaining_time / 60; //get the minutes
+    let remaining_seconds = remaining_time % 60; // get the seconds
+    let percent = if initial_time != 0 {
+        f32::from(remaining_time) / f32::from(initial_time)
+    } else {
+        0.0
+    };
+    canvas(Timer {
+        radius,
+        percent,
+        time: format!("{remaining_minutes:02}:{remaining_seconds:02}"),
+    })
+    .width(radius * 2.0)
+    .height(radius * 2.0)
+    .into()
 }
