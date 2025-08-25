@@ -4,21 +4,24 @@ use iced::alignment::{Horizontal, Vertical};
 use iced::widget::canvas;
 use iced::widget::canvas::path::{Arc, Builder};
 use iced::widget::canvas::{Stroke, Text};
-use iced::{Color, Radians, Rectangle, Renderer, Theme};
+use iced::{Color, Point, Radians, Rectangle, Renderer, Theme};
 use iced::{Element, mouse};
 
-pub const GREEN: Color = Color {
+const GREEN: Color = Color {
     r: 0.46,
     g: 0.96,
     b: 0.45,
     a: 1.0,
 };
 
+const LINE_WIDTH: f32 = 8.0;
+
 #[derive(Debug, Default)]
 struct Timer {
     radius: f32,
     percent: f32,
     time: String,
+    is_taking_break: bool,
 }
 
 impl<Message> canvas::Program<Message> for Timer {
@@ -33,11 +36,13 @@ impl<Message> canvas::Program<Message> for Timer {
         bounds: Rectangle,
         _cursor: mouse::Cursor,
     ) -> Vec<canvas::Geometry> {
-        const LINE_WIDTH: f32 = 8.0;
         let mut frame = canvas::Frame::new(renderer, bounds.size());
         let mut builder = Builder::new();
         builder.arc(Arc {
-            center: frame.center(),
+            center: Point {
+                x: frame.width() / 2.0,
+                y: frame.height() - LINE_WIDTH,
+            },
             radius: self.radius - LINE_WIDTH,
             start_angle: Radians(0.0 - PI * (1.0 - self.percent)),
             end_angle: Radians(-PI),
@@ -51,15 +56,27 @@ impl<Message> canvas::Program<Message> for Timer {
             line_dash: canvas::LineDash::default(),
         };
         frame.stroke(&semi_circle, stroke);
-        let time_display = Text {
+        frame.fill_text(Text {
             content: String::clone(&self.time),
             position: frame.center(),
             color: theme.palette().text,
             horizontal_alignment: Horizontal::Center,
-            vertical_alignment: Vertical::Center,
+            vertical_alignment: Vertical::Top,
             ..Default::default()
-        };
-        frame.fill_text(time_display);
+        });
+        if self.is_taking_break {
+            frame.fill_text(Text {
+                content: String::from("BREAK!"),
+                position: Point {
+                    x: frame.width() / 2.0,
+                    y: frame.height() / 2.0 - 18.0,
+                },
+                color: theme.palette().text,
+                horizontal_alignment: Horizontal::Center,
+                vertical_alignment: Vertical::Top,
+                ..Default::default()
+            });
+        }
         vec![frame.into_geometry()]
     }
 }
@@ -68,6 +85,7 @@ pub fn view<'a, Message: 'a>(
     radius: f32,
     remaining_time: u16,
     initial_time: u16,
+    is_taking_break: bool,
 ) -> Element<'a, Message> {
     let remaining_minutes = remaining_time / 60; //get the minutes
     let remaining_seconds = remaining_time % 60; // get the seconds
@@ -80,8 +98,9 @@ pub fn view<'a, Message: 'a>(
         radius,
         percent,
         time: format!("{remaining_minutes:02}:{remaining_seconds:02}"),
+        is_taking_break,
     })
     .width(radius * 2.0)
-    .height(radius * 2.0)
+    .height(radius + LINE_WIDTH)
     .into()
 }

@@ -4,6 +4,6 @@ use pomodo_rs::app::Pomodoro;
 fn main() -> Result {
     application("Pomodo.rs", Pomodoro::update, Pomodoro::view)
         .subscription(Pomodoro::subscription)
-        .window_size(Size::new(300.0, 400.0))
+        .window_size(Size::new(300.0, 300.0))
         .run()
 }

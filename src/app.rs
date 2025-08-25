@@ -1,31 +1,38 @@
 use crate::messages::Message;
 use crate::widgets::timer;
+use iced::Padding;
 use iced::time::{self, Duration};
-use iced::widget::{Column, button, container, row, text, text_input};
+use iced::widget::{Column, button, container, row};
 use iced::window::{gain_focus, get_latest};
 use iced::{Element, Length::Fill, Subscription, Task};
 
+const DEFAULT_TIME: u16 = 60 * 25;
+const MINI_BREAK_TIME: u16 = 60 * 5;
+const LONG_BREAK_TIME: u16 = 60 * 30;
+
 #[derive(Debug)]
 pub struct Pomodoro {
-    initial_minutes: u16,
-    initial_seconds: u16,
+    initial_time: u16,
     remaining_time: u16,
     paused: bool,
+    iteration: u8,
+    is_taking_break: bool,
 }
 
 impl Default for Pomodoro {
     fn default() -> Self {
-        Self::new(30, 0)
+        Self::new(DEFAULT_TIME)
     }
 }
 
 impl Pomodoro {
-    fn new(minutes: u16, seconds: u16) -> Self {
+    fn new(seconds: u16) -> Self {
         Self {
-            initial_minutes: minutes,
-            initial_seconds: seconds,
-            remaining_time: minutes * 60 + seconds,
+            initial_time: seconds,
+            remaining_time: seconds,
             paused: true,
+            iteration: 0,
+            is_taking_break: false,
         }
     }
 
@@ -40,21 +47,13 @@ impl Pomodoro {
                 Task::none()
             }
             Message::Stop => {
-                self.remaining_time = self.initial_minutes * 60 + self.initial_seconds;
+                self.remaining_time = self.initial_time;
                 self.paused = true;
-
                 Task::none()
             }
-            Message::SetMinutes(str) => {
-                self.initial_minutes = str.parse::<u16>().unwrap_or_default();
-                self.remaining_time = self.initial_minutes * 60 + self.initial_seconds;
-
-                Task::none()
-            }
-            Message::SetSeconds(str) => {
-                self.initial_seconds = str.parse::<u16>().unwrap_or_default();
-                self.remaining_time = self.initial_minutes * 60 + self.initial_seconds;
-
+            Message::SetSeconds(seconds) => {
+                self.initial_time = seconds;
+                self.remaining_time = seconds;
                 Task::none()
             }
             Message::Tick => {
@@ -63,36 +62,45 @@ impl Pomodoro {
                     Task::none()
                 } else {
                     Task::batch([
-                        self.update(Message::Stop),
+                        self.update(Message::ToggleBreak),
                         get_latest().and_then::<Message>(gain_focus),
                     ])
+                }
+            }
+            Message::ToggleBreak => {
+                self.is_taking_break = !self.is_taking_break;
+                if !self.is_taking_break {
+                    self.update(Message::SetSeconds(DEFAULT_TIME))
+                } else {
+                    self.iteration = (self.iteration + 1) % 4;
+
+                    if self.iteration == 0 {
+                        self.update(Message::SetSeconds(LONG_BREAK_TIME))
+                    } else {
+                        self.update(Message::SetSeconds(MINI_BREAK_TIME))
+                    }
                 }
             }
         }
     }
 
     pub fn view(&self) -> Element<Message> {
-        let initial_time = self.initial_minutes * 60 + self.initial_seconds;
-        let running = self.remaining_time != initial_time;
+        let running = self.remaining_time != self.initial_time;
         let mut column_elements = Vec::<Element<Message>>::new();
         column_elements.push(
-            container(timer::view(100.0, self.remaining_time, initial_time))
-                .center_x(Fill)
-                .into(),
+            container(timer::view(
+                100.0,
+                self.remaining_time,
+                self.initial_time,
+                self.is_taking_break,
+            ))
+            .center_x(Fill)
+            .padding(Padding {
+                top: 50.0,
+                ..Default::default()
+            })
+            .into(),
         );
-        if self.paused && !running {
-            column_elements.push(
-                container(row![
-                    text_input("00", &format!("{}", &self.initial_minutes))
-                        .on_input(Message::SetMinutes),
-                    text(":"),
-                    text_input("00", &format!("{}", &self.initial_seconds))
-                        .on_input(Message::SetSeconds),
-                ])
-                .center_x(Fill)
-                .into(),
-            );
-        }
         column_elements.push(
             container(
                 row![

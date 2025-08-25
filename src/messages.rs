@@ -1,9 +1,9 @@
 #[derive(Debug, Clone)]
 pub enum Message {
-    SetMinutes(String),
-    SetSeconds(String),
+    SetSeconds(u16),
     Pause,
     Resume,
     Stop,
     Tick,
+    ToggleBreak,
 }
