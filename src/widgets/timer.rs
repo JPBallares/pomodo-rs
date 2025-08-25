@@ -60,11 +60,8 @@ pub fn view<'a, Message: 'a>(
     radius: f32,
     percent: f32,
 ) -> Element<'a, Message> {
-    canvas(Timer {
-        radius: radius,
-        percent: percent,
-    })
-    .width(radius * 2.0)
-    .height(radius * 2.0)
-    .into()
+    canvas(Timer { radius, percent })
+        .width(radius * 2.0)
+        .height(radius * 2.0)
+        .into()
 }
