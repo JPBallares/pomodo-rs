@@ -8,7 +8,8 @@ A tiny cross-platform Pomodoro timer written in Rust using the `iced` GUI toolki
 
 ## Dependencies
 - `iced = 0.13.1` with feature `smol`
-  - See `Cargo.toml` for exact versions and features.
+- `rodio = "0.21.1`
+- See `Cargo.toml` for exact versions and features.
 
 ## Local Setup
 - Install Rust with `rustup` (https://rustup.rs) and update to latest stable:

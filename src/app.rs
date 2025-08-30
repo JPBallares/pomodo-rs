@@ -1,4 +1,5 @@
 use crate::messages::Message;
+use crate::utils::audio::play_beep;
 use crate::widgets::timer;
 use iced::Padding;
 use iced::time::{self, Duration};
@@ -49,6 +50,8 @@ impl Pomodoro {
             Message::Stop => {
                 self.remaining_time = self.initial_time;
                 self.paused = true;
+                self.is_taking_break = false;
+                self.iteration = 0;
                 Task::none()
             }
             Message::SetSeconds(seconds) => {
@@ -62,6 +65,7 @@ impl Pomodoro {
                     Task::none()
                 } else {
                     Task::batch([
+                        self.update(Message::PlayAudio),
                         self.update(Message::ToggleBreak),
                         get_latest().and_then::<Message>(gain_focus),
                     ])
@@ -81,10 +85,14 @@ impl Pomodoro {
                     }
                 }
             }
+            Message::PlayAudio => {
+                play_beep();
+                Task::none()
+            }
         }
     }
 
-    pub fn view(&self) -> Element<Message> {
+    pub fn view(&self) -> Element<'_, Message> {
         let running = self.remaining_time != self.initial_time;
         let mut column_elements = Vec::<Element<Message>>::new();
         column_elements.push(

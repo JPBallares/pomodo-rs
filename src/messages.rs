@@ -6,4 +6,5 @@ pub enum Message {
     Stop,
     Tick,
     ToggleBreak,
+    PlayAudio,
 }
